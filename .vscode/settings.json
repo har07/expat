@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "expat.h": "c",
+        "string.h": "c"
+    }
+}
