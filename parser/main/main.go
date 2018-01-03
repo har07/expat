@@ -9,7 +9,7 @@ import (
 func main() {
 	raw := `<root>
 	<child><grandchild foo="bar" name="fulan"/></child>
-	<child></child>
+	<chil%d></child>
 	<child/>
 </root>`
 	p := parser.Create("UTF-8", true)

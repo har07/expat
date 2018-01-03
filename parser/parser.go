@@ -20,7 +20,10 @@ import (
 	"unsafe"
 )
 
+// StartElementHandler handler function for start element event
 type StartElementHandler func(tag string, attrib map[string]string)
+
+// EndElementHandler handler function for end element event
 type EndElementHandler func(tag string)
 
 type XMLParser struct {
@@ -54,10 +57,36 @@ func Create(encoding string, namespace bool) *XMLParser {
 	return pool
 }
 
+// Feed feeds chunk of XML data to be parsed
+func (xp *XMLParser) Feed(data string) error {
+	cdata := (*C.XML_Char)(C.CString(data))
+	defer C.free(unsafe.Pointer(cdata))
+	cerr := C.Feed(C.int(xp.id), cdata, C.int(len(data)), C.int(0))
+	errCode := int(cerr)
+	if errCode != 0 {
+		cerrMsg := C.GetError(C.int(xp.id), cerr)
+		defer C.free(unsafe.Pointer(cerrMsg))
+		return fmt.Errorf("parsing error with code %d: %s", errCode, C.GoString(cerrMsg))
+	}
+	return nil
+}
+
+// Close finished feeding XML data
+func (xp *XMLParser) Close(data string) error {
+	cdata := (*C.XML_Char)(C.CString(""))
+	cerr := C.Feed(C.int(xp.id), cdata, C.int(len(data)), C.int(1))
+	errCode := int(cerr)
+	if errCode != 0 {
+		cerrMsg := C.GetError(C.int(xp.id), cerr)
+		defer C.free(unsafe.Pointer(cerrMsg))
+		return fmt.Errorf("parsing finished with error. Error code %d: %s", errCode, C.GoString(cerrMsg))
+	}
+	return nil
+}
+
 func (xp *XMLParser) Parse(data string) error {
 	cdata := (*C.XML_Char)(C.CString(data))
 	defer C.free(unsafe.Pointer(cdata))
-	// C.Feed(C.int(xp.id), cdata, C.int(len(data)), C.int(1))
 	cerr := C.Feed(C.int(xp.id), cdata, C.int(len(data)), C.int(1))
 	errCode := int(cerr)
 	if errCode != 0 {
