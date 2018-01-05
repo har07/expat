@@ -11,6 +11,7 @@ extern int Feed(int id, XML_Char *chunk, int len, int finish);
 extern void SetHandlers(int id, int start, int end);
 extern void Free(int id);
 extern int GetCurrentLineNumber(int id);
+extern int GetCurrentColumnNumber(int id);
 extern char* GetError(int id, int code);
 extern int GetCurrentAttributeCount(int id);
 */
@@ -19,6 +20,13 @@ import (
 	"fmt"
 	"unsafe"
 )
+
+type ParseError struct {
+	Desc   string
+	Code   int
+	Line   int
+	Column int
+}
 
 // StartElementHandler handler function for start element event
 type StartElementHandler func(tag string, attrib map[string]string)
@@ -57,6 +65,12 @@ func Create(encoding string, namespace bool) *XMLParser {
 	return pool
 }
 
+func (pe ParseError) Error() string {
+	return fmt.Sprintf("Error [%d] at line %d column %d: %s",
+		pe.Code, pe.Line, pe.Column, pe.Desc,
+	)
+}
+
 // Feed feeds chunk of XML data to be parsed
 func (xp *XMLParser) Feed(data string) error {
 	cdata := (*C.XML_Char)(C.CString(data))
@@ -66,7 +80,14 @@ func (xp *XMLParser) Feed(data string) error {
 	if errCode != 0 {
 		cerrMsg := C.GetError(C.int(xp.id), cerr)
 		defer C.free(unsafe.Pointer(cerrMsg))
-		return fmt.Errorf("parsing error with code %d: %s", errCode, C.GoString(cerrMsg))
+		cline := C.GetCurrentLineNumber(C.int(xp.id))
+		ccol := C.GetCurrentColumnNumber(C.int(xp.id))
+		return ParseError{
+			Desc:   C.GoString(cerrMsg),
+			Code:   errCode,
+			Line:   int(cline),
+			Column: int(ccol),
+		}
 	}
 	return nil
 }
@@ -92,7 +113,14 @@ func (xp *XMLParser) Parse(data string) error {
 	if errCode != 0 {
 		cerrMsg := C.GetError(C.int(xp.id), cerr)
 		defer C.free(unsafe.Pointer(cerrMsg))
-		return fmt.Errorf("parsing error with code %d: %s", errCode, C.GoString(cerrMsg))
+		cline := C.GetCurrentLineNumber(C.int(xp.id))
+		ccol := C.GetCurrentColumnNumber(C.int(xp.id))
+		return ParseError{
+			Desc:   C.GoString(cerrMsg),
+			Code:   errCode,
+			Line:   int(cline),
+			Column: int(ccol),
+		}
 	}
 	return nil
 }

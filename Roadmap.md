@@ -30,6 +30,11 @@
 # Create Go Element Class #
 - For V0.X, create a very simple Element class implementation, just to enable us to put everything together and test (parse+tree builder+element class) [v]
 
+# Current #
+- Implement Parse on ElementTree
+- Integrasi XMLParser dg TreeBuilder
+- Make sure memory are freed in XMLParser (and parser.c too?)
+
 
 # The Roadmap #
 V0.

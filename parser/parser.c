@@ -100,6 +100,10 @@ int GetCurrentLineNumber(int id){
     return XML_GetCurrentLineNumber(PI.parser);
 }
 
+int GetCurrentColumnNumber(int id){
+    return XML_GetCurrentColumnNumber(PI.parser);
+}
+
 int GetCurrentAttributeCount(int id){
     return XML_GetSpecifiedAttributeCount(PI.parser);
 }
