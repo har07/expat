@@ -62,7 +62,7 @@ int Create(XML_Char *encoding, int namespace){
     if(namespace){
         p = XML_ParserCreate(encoding);
     } else {
-        p = XML_ParserCreate(encoding);
+        p = XML_ParserCreateNS(encoding, ':');
     }
     XML_SetElementHandler(p, _handle_start_, _handle_end_);
     ParserInstance pi;

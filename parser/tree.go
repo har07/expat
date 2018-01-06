@@ -1,10 +1,9 @@
-package etree
+package parser
 
 import (
 	"fmt"
 	"strings"
-
-	"github.com/har07/expat/parser"
+	"io/ioutil"
 )
 
 // Element is an XML element.
@@ -25,6 +24,25 @@ type Element struct {
 	Text     *string
 	Children []*Element
 	Attrib   map[string]string
+}
+
+// FromString parses XML document from string constant.
+// This function can be used to embed "XML Literals" in Python code.
+// *text* is a string containing XML data, *parser* is an
+// optional parser instance, defaulting to the standard XMLParser.
+// Returns an Element instance.
+func FromString(text string, _xmlpar... *XMLParser) (*Element, error){
+	var xmlpar *XMLParser
+	if len(_xmlpar) > 0 {
+		xmlpar = _xmlpar[0]
+	} else {
+		xmlpar = CreateParser("UTF-8", true, CreateBuilder())
+	}
+	defer xmlpar.Free()
+	if err := xmlpar.Feed(text); err != nil {
+		return nil, err
+	}
+	return xmlpar.Close()
 }
 
 // CreateElement return new Element
@@ -57,7 +75,7 @@ func (e *Element) Extend(elements []*Element) {
 // Insert inserts *subelement* at position *index*.
 func (e *Element) Insert(subelement *Element, index int) {
 	i := index
-	e.Children = append(e.Children, 0)
+	e.Children = append(e.Children, nil)
 	copy(e.Children[i+1:], e.Children[i:])
 	e.Children[i] = subelement
 }
@@ -155,11 +173,26 @@ func (t *ElementTree) Root() *Element {
 }
 
 // Parse Load external XML document into element tree.
-// *source* is a file name or file object, *parser* is an optional parser
+// *source* is a file name or file object, *xmlpar* is an optional parser
 // instance that defaults to XMLParser.
 // ParseError is raised if the parser fails to parse the document.
 // Returns the root element of the given source document.
-func (t *ElementTree) Parse(source string, parser ...parser.XMLParser) error {
+func (t *ElementTree) Parse(source string, _xmlpar... *XMLParser) error {
+	content, err := ioutil.ReadFile(source)
+	if err != nil {
+		return err
+	}
+	var xmlpar *XMLParser
+	if len(_xmlpar) > 0 {
+		xmlpar = _xmlpar[0]
+	} else {
+		xmlpar = CreateParser("UTF-8", true, CreateBuilder())
+	}
+	root, err := xmlpar.ParseWhole(string(content))
+	if err != nil {
+		return err
+	}
+	t.root = root
 	return nil
 }
 
@@ -182,8 +215,8 @@ type TreeBuilder struct {
 type TreeFactory func(tag string, attrs map[string]string) *Element
 
 // CreateBuilder returns new TreeBuilder instance
-func CreateBuilder(factory ...TreeFactory) TreeBuilder {
-	b := TreeBuilder{}
+func CreateBuilder(factory ...TreeFactory) *TreeBuilder {
+	b := &TreeBuilder{}
 	if len(factory) > 0 {
 		b.factory = factory[0]
 	} else {
@@ -231,8 +264,9 @@ func (t *TreeBuilder) flush() error {
 }
 
 // Data add text to current element
-func (t *TreeBuilder) Data(data string) {
+func (t *TreeBuilder) Data(data string) error {
 	t.data = append(t.data, data)
+	return nil
 }
 
 // Start open new element and return it.
