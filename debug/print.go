@@ -6,7 +6,7 @@ import (
 )
 
 func PrintJSON(o interface{}) string {
-	str, err := json.Marshal(o)
+	str, err := json.MarshalIndent(o, "", "  ")
 	if err != nil {
 		fmt.Printf("PrintJSON error: %s", err.Error())
 	}

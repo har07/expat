@@ -294,6 +294,6 @@ func (t *TreeBuilder) End(tag string) (*Element, error) {
 	if t.last.Tag != tag {
 		return nil, fmt.Errorf("end tag mismatch (expected %s, got %s)", t.last.Tag, tag)
 	}
-	t.tail = false
+	t.tail = true
 	return t.last, nil
 }

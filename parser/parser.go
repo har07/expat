@@ -160,21 +160,21 @@ func (xp *XMLParser) Feed(data string) error {
 
 // Close finishes feeding data to parser and return element structure
 func (xp *XMLParser) Close() (*Element, error) {
-	cdata := (*C.XML_Char)(C.CString(""))
-	cerr := C.Feed(C.int(xp.id), cdata, C.int(1), C.int(1))
-	errCode := int(cerr)
-	if errCode != 0 {
-		cerrMsg := C.GetError(C.int(xp.id), cerr)
-		// defer C.free(unsafe.Pointer(cerrMsg))
-		cline := C.GetCurrentLineNumber(C.int(xp.id))
-		ccol := C.GetCurrentColumnNumber(C.int(xp.id))
-		return nil, ParseError{
-			Desc:   C.GoString(cerrMsg),
-			Code:   errCode,
-			Line:   int(cline),
-			Column: int(ccol),
-		}
-	}
+	// cdata := (*C.XML_Char)(C.CString(""))
+	// cerr := C.Feed(C.int(xp.id), cdata, C.int(1), C.int(1))
+	// errCode := int(cerr)
+	// if errCode != 0 {
+	// 	cerrMsg := C.GetError(C.int(xp.id), cerr)
+	// 	// defer C.free(unsafe.Pointer(cerrMsg))
+	// 	cline := C.GetCurrentLineNumber(C.int(xp.id))
+	// 	ccol := C.GetCurrentColumnNumber(C.int(xp.id))
+	// 	return nil, ParseError{
+	// 		Desc:   C.GoString(cerrMsg),
+	// 		Code:   errCode,
+	// 		Line:   int(cline),
+	// 		Column: int(ccol),
+	// 	}
+	// }
 	return xp.target.Close()
 }
 
