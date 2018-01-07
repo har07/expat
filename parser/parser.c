@@ -32,17 +32,13 @@ static void XMLCALL _handle_start_(void *data, const XML_Char *el, const XML_Cha
     for (i = 0; attr[i]; i++) {
         count++;
     }
-    // printf("C count: %d\n", count);
     XML_Char **attribcpy = malloc((count+1)*sizeof(XML_Char*));
     for (i = 0; i<count; i++) {
-        // attribcpy[i] = malloc((strlen(attr[i])+1)*sizeof(XML_Char));
         attribcpy[i] = malloc((strlen(attr[i]))*sizeof(XML_Char));
         strcpy(attribcpy[i], attr[i]);
     }
-    // attribcpy[count] = NULL;
 
     GStartElementHandler(PI.id, tag, attribcpy);
-    // GStartElementHandler(PI.id, tag, NULL);
 }
 
 static void XMLCALL _handle_end_(void *data, const XML_Char *el)
@@ -57,6 +53,24 @@ static void XMLCALL _handle_end_(void *data, const XML_Char *el)
     GEndElementHandler(PI.id, tag);
 }
 
+static void XMLCALL _handle_char_data_(void *data, const XML_Char *s, int len)
+{
+    XML_Char *text;
+    text = malloc(len*sizeof(XML_Char));
+    strcpy(text, s);
+
+    GCharDataHandler(PI.id, text, len);
+}
+
+static void XMLCALL _handle_default_(void *data, const XML_Char *s, int len)
+{
+    XML_Char *text;
+    text = malloc(len*sizeof(XML_Char));
+    strcpy(text, s);
+
+    GDefaultHandler(PI.id, text, len);
+}
+
 int Create(XML_Char *encoding, int namespace){
     XML_Parser p;
     if(namespace){
@@ -65,6 +79,8 @@ int Create(XML_Char *encoding, int namespace){
         p = XML_ParserCreateNS(encoding, ':');
     }
     XML_SetElementHandler(p, _handle_start_, _handle_end_);
+    XML_SetCharacterDataHandler(p, _handle_char_data_);
+    XML_SetDefaultHandler(p, _handle_default_);
     ParserInstance pi;
     pi.id = lastId++;
     pi.parser = p;

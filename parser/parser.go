@@ -18,8 +18,8 @@ extern int GetCurrentAttributeCount(int id);
 import "C"
 import (
 	"fmt"
-	"unsafe"
 	"strings"
+	"unsafe"
 )
 
 type ParseError struct {
@@ -29,27 +29,20 @@ type ParseError struct {
 	Column int
 }
 
-// StartElementHandler handler function for start element event
-type StartElementHandler func(tag string, attrib map[string]string)
-
-// EndElementHandler handler function for end element event
-type EndElementHandler func(tag string)
-
 type XMLParser struct {
-	id    int
+	id      int
 	version string
-	start StartElementHandler
-	end   EndElementHandler
-	target *TreeBuilder
-	names map[string]string
-	entity map[string]string
+	target  *TreeBuilder
+	names   map[string]string
+	entity  map[string]string
 }
 
 var pool *XMLParser
 
+// CreateParser initialize new XMLParser instance
 func CreateParser(encoding string, namespace bool, target *TreeBuilder) *XMLParser {
 	p := XMLParser{
-		names: make(map[string]string),
+		names:  make(map[string]string),
 		entity: make(map[string]string),
 	}
 	var cnamespace C.int
@@ -69,10 +62,11 @@ func CreateParser(encoding string, namespace bool, target *TreeBuilder) *XMLPars
 		t := CreateBuilder()
 		p.target = t
 	}
-	
+
 	p.version = "Expat version 2.2.5" // TODO: determine actual Expat version
 
 	// TODO: register main callbacks: start_element, end_element, character_data
+	// start, end, handler, data
 	// TODO: register miscellaneous callbacks: comment, pi
 
 	//register to pool
@@ -99,6 +93,48 @@ func (xp *XMLParser) fixName(key string) (name string) {
 		xp.names[key] = name
 	}
 	return name
+}
+
+// handler is a default handler for expat events
+func (xp *XMLParser) handler(text string) {
+	prefix := text[:1]
+	if prefix == "&" {
+		entityRef := ""
+		if val, ok := xp.entity[text[1:len(text)-1]]; ok {
+			entityRef = val
+		} else {
+			// TODO: notify caller about the error
+			errMsg := "undefined entity " + text
+			cline := C.GetCurrentLineNumber(C.int(xp.id))
+			ccol := C.GetCurrentColumnNumber(C.int(xp.id))
+			fmt.Printf(ParseError{
+				Desc:   errMsg,
+				Code:   11, // XML_ERROR_UNDEFINED_ENTITY
+				Line:   int(cline),
+				Column: int(ccol),
+			}.Error())
+		}
+		xp.target.Data(entityRef)
+	}
+}
+
+// start is a handler for expat's StartElementHandler. Since ordered_attributes
+// is set, the attributes are reported as a list of alternating
+// attribute name,value.
+func (xp *XMLParser) start(tag string, attrib map[string]string) {
+	tag = xp.fixName(tag)
+	xp.target.Start(tag, attrib)
+}
+
+// end is a handler for expat's EndElementHandler
+func (xp *XMLParser) end(tag string) {
+	tag = xp.fixName(tag)
+	xp.target.End(tag)
+}
+
+// data is a handler for expat's CharacterDataHandler
+func (xp *XMLParser) data(text string) {
+	xp.target.Data(text)
 }
 
 // Feed feeds chunk of XML data to be parsed
@@ -142,7 +178,7 @@ func (xp *XMLParser) Close() (*Element, error) {
 	return xp.target.Close()
 }
 
-// TODO: return root element
+// ParseWhole parses entire XML document and return the root, if success
 func (xp *XMLParser) ParseWhole(data string) (*Element, error) {
 	cdata := (*C.XML_Char)(C.CString(data))
 	defer C.free(unsafe.Pointer(cdata))
@@ -168,21 +204,15 @@ func (xp *XMLParser) Free() {
 	pool = nil // reset id/remove from pool
 }
 
-func (xp *XMLParser) SetElementHandler(s StartElementHandler, e EndElementHandler) {
-	xp.start = s
-	xp.end = e
-}
-
-// GStartElementHandler is a handler for expat's StartElementHandler. Since ordered_attributes
-// is set, the attributes are reported as a list of alternating
-// attribute name,value.
+// GStartElementHandler ....
 //export GStartElementHandler
 func GStartElementHandler(id C.int, el *C.XML_Char, attr **C.XML_Char) {
+	defer C.free(unsafe.Pointer(el))
+
 	// get parser by id
 	p := pool
 
 	tag := C.GoString((*C.char)(el))
-	tag = p.fixName(tag)
 
 	max := int(C.GetCurrentAttributeCount(id))
 	if max > 0 && attr == nil {
@@ -200,47 +230,44 @@ func GStartElementHandler(id C.int, el *C.XML_Char, attr **C.XML_Char) {
 		val := C.GoString((*C.char)(gattr[i+1]))
 		attrib[goname] = val
 	}
-	p.target.Start(tag, attrib)
+	p.start(tag, attrib)
 	return
 }
 
-// GEndElementHandler is 
+// GEndElementHandler is
 //export GEndElementHandler
 func GEndElementHandler(id C.int, el *C.XML_Char) {
+	defer C.free(unsafe.Pointer(el))
+
 	// get parser by id
 	p := pool
 
 	// invoke corresponding handler
 	tag := C.GoString((*C.char)(el))
-	tag = p.fixName(tag)
-	p.target.End(tag)
+	p.end(tag)
 	return
 }
 
-// GDefaultHandler is 
+// GDefaultHandler is
 //export GDefaultHandler
-func GDefaultHandler(id C.int, s *C.XML_Char, length C.int){
+func GDefaultHandler(id C.int, s *C.XML_Char, length C.int) {
+	defer C.free(unsafe.Pointer(s))
+
 	// get parser by id
 	p := pool
 
-	text := C.GoString((*C.char)(s))
-	prefix := text[:1]
-	if prefix == "&" {
-		entityRef := ""
-		if val, ok := p.entity[text[1:len(text)-1]]; ok {
-			entityRef = val
-		} else {
-			// TODO: notify caller about the error
-			errMsg := "undefined entity " + text
-			cline := C.GetCurrentLineNumber(id)
-			ccol := C.GetCurrentColumnNumber(id)
-			fmt.Printf(ParseError{
-				Desc:   errMsg,
-				Code:   11, // XML_ERROR_UNDEFINED_ENTITY
-				Line:   int(cline),
-				Column: int(ccol),
-			}.Error())
-		}
-		p.target.Data(text)
-	}
+	text := C.GoStringN((*C.char)(s), length)
+	p.handler(text)
+}
+
+// GCharDataHandler is
+//export GCharDataHandler
+func GCharDataHandler(id C.int, s *C.XML_Char, length C.int) {
+	defer C.free(unsafe.Pointer(s))
+
+	// get parser by id
+	p := pool
+
+	text := C.GoStringN((*C.char)(s), length)
+	p.data(text)
 }

@@ -2,8 +2,8 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 	"io/ioutil"
+	"strings"
 )
 
 // Element is an XML element.
@@ -31,7 +31,7 @@ type Element struct {
 // *text* is a string containing XML data, *parser* is an
 // optional parser instance, defaulting to the standard XMLParser.
 // Returns an Element instance.
-func FromString(text string, _xmlpar... *XMLParser) (*Element, error){
+func FromString(text string, _xmlpar ...*XMLParser) (*Element, error) {
 	var xmlpar *XMLParser
 	if len(_xmlpar) > 0 {
 		xmlpar = _xmlpar[0]
@@ -177,7 +177,7 @@ func (t *ElementTree) Root() *Element {
 // instance that defaults to XMLParser.
 // ParseError is raised if the parser fails to parse the document.
 // Returns the root element of the given source document.
-func (t *ElementTree) Parse(source string, _xmlpar... *XMLParser) error {
+func (t *ElementTree) Parse(source string, _xmlpar ...*XMLParser) error {
 	content, err := ioutil.ReadFile(source)
 	if err != nil {
 		return err

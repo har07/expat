@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/har07/expat/parser"
 	"github.com/har07/expat/debug"
+	"github.com/har07/expat/parser"
 )
 
 func main() {
@@ -13,6 +13,10 @@ func main() {
 	<chil%d></child>
 	<child/>
 </root>`
-	root := parser.FromString(raw)
+	root, err := parser.FromString(raw)
+	if err != nil {
+		fmt.Printf("FromString call error: %s\n", err.Error())
+		return
+	}
 	fmt.Println(debug.PrintJSON(root))
 }
