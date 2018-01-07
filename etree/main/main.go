@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/har07/expat/debug"
-	"github.com/har07/expat/parser"
+	"github.com/har07/expat/etree"
 )
 
 func main() {
@@ -13,7 +13,7 @@ func main() {
 	<child>baz</child>
 	<child/>
 </root>`
-	root, err := parser.FromString(raw)
+	root, err := etree.FromString(raw)
 	if err != nil {
 		fmt.Printf("FromString call error: %s\n", err.Error())
 		return

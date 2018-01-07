@@ -20,21 +20,24 @@ import (
 	"fmt"
 	"strings"
 	"unsafe"
+
+	"github.com/har07/expat/etree/builder"
+	"github.com/har07/expat/etree/element"
 )
 
-type ExpatParser struct {
+type GoExpat struct {
 	id      int
 	version string
-	target  *TreeBuilder
+	target  *builder.Tree
 	names   map[string]string
 	entity  map[string]string
 }
 
-var pool *ExpatParser
+var pool *GoExpat
 
-// NewExpatParser initialize new ExpatParser instance
-func NewExpatParser(encoding string, namespace bool, target *TreeBuilder) *ExpatParser {
-	p := ExpatParser{
+// NewExpat initialize new GoExpat instance
+func NewExpat(encoding string, namespace bool, target *builder.Tree) *GoExpat {
+	p := GoExpat{
 		names:  make(map[string]string),
 		entity: make(map[string]string),
 	}
@@ -52,7 +55,7 @@ func NewExpatParser(encoding string, namespace bool, target *TreeBuilder) *Expat
 	if target != nil {
 		p.target = target
 	} else {
-		t := NewBuilder()
+		t := builder.New()
 		p.target = t
 	}
 
@@ -75,7 +78,7 @@ func (pe ParseError) Error() string {
 }
 
 // fixName expands qname
-func (xp *ExpatParser) fixName(key string) (name string) {
+func (xp *GoExpat) fixName(key string) (name string) {
 	if val, ok := xp.names[key]; ok {
 		name = val
 	} else {
@@ -89,7 +92,7 @@ func (xp *ExpatParser) fixName(key string) (name string) {
 }
 
 // handler is a default handler for expat events
-func (xp *ExpatParser) handler(text string) {
+func (xp *GoExpat) handler(text string) {
 	prefix := text[:1]
 	if prefix == "&" {
 		entityRef := ""
@@ -114,24 +117,24 @@ func (xp *ExpatParser) handler(text string) {
 // start is a handler for expat's StartElementHandler. Since ordered_attributes
 // is set, the attributes are reported as a list of alternating
 // attribute name,value.
-func (xp *ExpatParser) start(tag string, attrib map[string]string) {
+func (xp *GoExpat) start(tag string, attrib map[string]string) {
 	tag = xp.fixName(tag)
 	xp.target.Start(tag, attrib)
 }
 
 // end is a handler for expat's EndElementHandler
-func (xp *ExpatParser) end(tag string) {
+func (xp *GoExpat) end(tag string) {
 	tag = xp.fixName(tag)
 	xp.target.End(tag)
 }
 
 // data is a handler for expat's CharacterDataHandler
-func (xp *ExpatParser) data(text string) {
+func (xp *GoExpat) data(text string) {
 	xp.target.Data(text)
 }
 
 // Feed feeds chunk of XML data to be parsed
-func (xp *ExpatParser) Feed(data string) error {
+func (xp *GoExpat) Feed(data string) error {
 	cdata := (*C.XML_Char)(C.CString(data))
 	// defer C.free(unsafe.Pointer(cdata))
 	cerr := C.Feed(C.int(xp.id), cdata, C.int(len(data)), C.int(0))
@@ -152,7 +155,7 @@ func (xp *ExpatParser) Feed(data string) error {
 }
 
 // Close finishes feeding data to parser and return element structure
-func (xp *ExpatParser) Close() (*Element, error) {
+func (xp *GoExpat) Close() (*element.E, error) {
 	// cdata := (*C.XML_Char)(C.CString(""))
 	// cerr := C.Feed(C.int(xp.id), cdata, C.int(1), C.int(1))
 	// errCode := int(cerr)
@@ -172,7 +175,7 @@ func (xp *ExpatParser) Close() (*Element, error) {
 }
 
 // ParseWhole parses entire XML document and return the root, if success
-func (xp *ExpatParser) ParseWhole(data string) (*Element, error) {
+func (xp *GoExpat) ParseWhole(data string) (*element.E, error) {
 	cdata := (*C.XML_Char)(C.CString(data))
 	defer C.free(unsafe.Pointer(cdata))
 	cerr := C.Feed(C.int(xp.id), cdata, C.int(len(data)), C.int(1))
@@ -192,7 +195,7 @@ func (xp *ExpatParser) ParseWhole(data string) (*Element, error) {
 	return xp.target.Close()
 }
 
-func (xp *ExpatParser) Free() {
+func (xp *GoExpat) Free() {
 	C.Free(C.int(xp.id))
 	pool = nil // reset id/remove from pool
 }
