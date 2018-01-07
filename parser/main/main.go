@@ -10,7 +10,7 @@ import (
 func main() {
 	raw := `<root>
 	<child><grandchild foo="bar" name="fulan"/></child>
-	<chil%d></child>
+	<child></child>
 	<child/>
 </root>`
 	root, err := parser.FromString(raw)

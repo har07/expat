@@ -140,12 +140,12 @@ func (xp *XMLParser) data(text string) {
 // Feed feeds chunk of XML data to be parsed
 func (xp *XMLParser) Feed(data string) error {
 	cdata := (*C.XML_Char)(C.CString(data))
-	defer C.free(unsafe.Pointer(cdata))
+	// defer C.free(unsafe.Pointer(cdata))
 	cerr := C.Feed(C.int(xp.id), cdata, C.int(len(data)), C.int(0))
 	errCode := int(cerr)
 	if errCode != 0 {
 		cerrMsg := C.GetError(C.int(xp.id), cerr)
-		defer C.free(unsafe.Pointer(cerrMsg))
+		// defer C.free(unsafe.Pointer(cerrMsg))
 		cline := C.GetCurrentLineNumber(C.int(xp.id))
 		ccol := C.GetCurrentColumnNumber(C.int(xp.id))
 		return ParseError{
@@ -165,7 +165,7 @@ func (xp *XMLParser) Close() (*Element, error) {
 	errCode := int(cerr)
 	if errCode != 0 {
 		cerrMsg := C.GetError(C.int(xp.id), cerr)
-		defer C.free(unsafe.Pointer(cerrMsg))
+		// defer C.free(unsafe.Pointer(cerrMsg))
 		cline := C.GetCurrentLineNumber(C.int(xp.id))
 		ccol := C.GetCurrentColumnNumber(C.int(xp.id))
 		return nil, ParseError{
@@ -237,7 +237,7 @@ func GStartElementHandler(id C.int, el *C.XML_Char, attr **C.XML_Char) {
 // GEndElementHandler is
 //export GEndElementHandler
 func GEndElementHandler(id C.int, el *C.XML_Char) {
-	defer C.free(unsafe.Pointer(el))
+	// defer C.free(unsafe.Pointer(el))
 
 	// get parser by id
 	p := pool
@@ -251,7 +251,7 @@ func GEndElementHandler(id C.int, el *C.XML_Char) {
 // GDefaultHandler is
 //export GDefaultHandler
 func GDefaultHandler(id C.int, s *C.XML_Char, length C.int) {
-	defer C.free(unsafe.Pointer(s))
+	// defer C.free(unsafe.Pointer(s))
 
 	// get parser by id
 	p := pool
@@ -263,7 +263,7 @@ func GDefaultHandler(id C.int, s *C.XML_Char, length C.int) {
 // GCharDataHandler is
 //export GCharDataHandler
 func GCharDataHandler(id C.int, s *C.XML_Char, length C.int) {
-	defer C.free(unsafe.Pointer(s))
+	// defer C.free(unsafe.Pointer(s))
 
 	// get parser by id
 	p := pool

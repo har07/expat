@@ -40,7 +40,7 @@ func FromString(text string, _xmlpar ...*XMLParser) (*Element, error) {
 	}
 	defer xmlpar.Free()
 	if err := xmlpar.Feed(text); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Parsing finished with error: %s", err.Error())
 	}
 	return xmlpar.Close()
 }
