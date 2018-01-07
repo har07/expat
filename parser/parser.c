@@ -90,7 +90,7 @@ int Create(XML_Char *encoding, int namespace){
 }
 
 int Feed(int id, XML_Char *chunk, int len, int finish){
-    if (XML_Parse(PI.parser, chunk, len, 1) == XML_STATUS_ERROR) {
+    if (XML_Parse(PI.parser, chunk, len, finish) == XML_STATUS_ERROR) {
         // ParseError err;
         // const char * temp = XML_ErrorString(XML_GetErrorCode(PI.parser));
         // char *msg;
