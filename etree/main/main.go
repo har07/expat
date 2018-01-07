@@ -8,8 +8,8 @@ import (
 )
 
 func main() {
-	raw := `<root>
-	<child><grandchild foo="bar" name="fulan"/></child>
+	raw := `<root xmlns="foo">
+	<child xmlns="bar"><grandchild foo="bar" name="fulan"/></child>
 	<child>baz</child>
 	<child/>
 </root>`

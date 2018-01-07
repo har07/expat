@@ -58,7 +58,7 @@ func FromString(text string, _xmlpar ...parser.XML) (*element.E, error) {
 	if len(_xmlpar) > 0 {
 		xmlpar = _xmlpar[0]
 	} else {
-		xmlpar = parser.NewExpat("UTF-8", true, builder.New())
+		xmlpar = parser.NewExpat("UTF-8", false, builder.New())
 	}
 	defer xmlpar.Free()
 	if err := xmlpar.Feed(text); err != nil {
