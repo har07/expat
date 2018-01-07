@@ -6,6 +6,21 @@ import (
 	"strings"
 )
 
+type XMLParser interface {
+	ParseWhole(data string) (*Element, error)
+	Close() (*Element, error)
+	Feed(data string) error
+	Free()
+}
+
+// ParseError contains error info on parsing tree
+type ParseError struct {
+	Desc   string
+	Code   int
+	Line   int
+	Column int
+}
+
 // Element is an XML element.
 // This class is the reference implementation of the Element interface.
 // An element's length is its number of subelements.  That means if you
@@ -31,12 +46,12 @@ type Element struct {
 // *text* is a string containing XML data, *parser* is an
 // optional parser instance, defaulting to the standard XMLParser.
 // Returns an Element instance.
-func FromString(text string, _xmlpar ...*XMLParser) (*Element, error) {
-	var xmlpar *XMLParser
+func FromString(text string, _xmlpar ...XMLParser) (*Element, error) {
+	var xmlpar XMLParser
 	if len(_xmlpar) > 0 {
 		xmlpar = _xmlpar[0]
 	} else {
-		xmlpar = CreateParser("UTF-8", true, CreateBuilder())
+		xmlpar = NewExpatParser("UTF-8", true, NewBuilder())
 	}
 	defer xmlpar.Free()
 	if err := xmlpar.Feed(text); err != nil {
@@ -177,16 +192,16 @@ func (t *ElementTree) Root() *Element {
 // instance that defaults to XMLParser.
 // ParseError is raised if the parser fails to parse the document.
 // Returns the root element of the given source document.
-func (t *ElementTree) Parse(source string, _xmlpar ...*XMLParser) error {
+func (t *ElementTree) Parse(source string, _xmlpar ...XMLParser) error {
 	content, err := ioutil.ReadFile(source)
 	if err != nil {
 		return err
 	}
-	var xmlpar *XMLParser
+	var xmlpar XMLParser
 	if len(_xmlpar) > 0 {
 		xmlpar = _xmlpar[0]
 	} else {
-		xmlpar = CreateParser("UTF-8", true, CreateBuilder())
+		xmlpar = NewExpatParser("UTF-8", true, NewBuilder())
 	}
 	root, err := xmlpar.ParseWhole(string(content))
 	if err != nil {
@@ -214,8 +229,8 @@ type TreeBuilder struct {
 // TreeFactory is
 type TreeFactory func(tag string, attrs map[string]string) *Element
 
-// CreateBuilder returns new TreeBuilder instance
-func CreateBuilder(factory ...TreeFactory) *TreeBuilder {
+// NewBuilder returns new TreeBuilder instance
+func NewBuilder(factory ...TreeFactory) *TreeBuilder {
 	b := &TreeBuilder{}
 	if len(factory) > 0 {
 		b.factory = factory[0]
