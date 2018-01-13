@@ -34,7 +34,7 @@ static void XMLCALL _handle_start_(void *data, const XML_Char *el, const XML_Cha
     }
     XML_Char **attribcpy = malloc((count+1)*sizeof(XML_Char*));
     for (i = 0; i<count; i++) {
-        attribcpy[i] = malloc((strlen(attr[i]))*sizeof(XML_Char));
+        attribcpy[i] = malloc((strlen(attr[i])+1)*sizeof(XML_Char));
         strcpy(attribcpy[i], attr[i]);
     }
 
@@ -44,10 +44,9 @@ static void XMLCALL _handle_start_(void *data, const XML_Char *el, const XML_Cha
 static void XMLCALL _handle_end_(void *data, const XML_Char *el)
 {
     (void)data;
-    (void)el;
 
     XML_Char *tag;
-    tag = malloc(strlen(el)+1);
+    tag = malloc((strlen(el)+1)*sizeof(XML_Char));
     strcpy(tag, el);
 
     GEndElementHandler(PI.id, tag);

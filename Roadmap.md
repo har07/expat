@@ -14,7 +14,11 @@
 
 # Current #
 - Collect namespaces info on ElementTree creation (on parsing)
-- Figure out why C.free() threw exception
+- Figure out why C.free() threw exception:
+    - turned out handler invoked twice with the same char pointer address!! (but how/why?)
+    - more detail: in the case of empty element, start and end element handler invoked with the same pointer for tag name
+    - seems like same pointer address is not a problem. malloc reuse the same address since previous data using that address has been freed (proved by commenting C.free, and now malloc assign different address location)
+    - solved by setting pointer to nil before calling C.free, and always check for nil before freeing
 
 # The Roadmap #
 V0.
